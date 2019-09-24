@@ -9,38 +9,124 @@ function debug() {
     fi
 }
 
+# will attempt to use a package manager to install the missing program, will still stop the script
+# but it should be installed
+function installProg() {
+    progName=$1
+
+    echo "You are missing '$progName', attempting to install...."
+
+
+    # try to install using apt-get
+    if command -v apt-get &>/dev/null; then
+        echo "Using 'apt-get' to install '$progName'"
+
+        sudo apt-get update
+        sudo apt-get install -y "$progName"
+        exit 1
+    fi
+
+    # try to install using apt-get
+    if command -v dnf &>/dev/null; then
+        echo "Using 'dnf' to install '$progName'"
+
+        sudo dnf install -y "$progName"
+        exit 1
+    fi
+
+    # try to install using homebrew
+    if  command -v brew &>/dev/null; then
+        echo "Using 'homebrew' to install '$progName'"
+
+        brew install "$progName"
+        exit 1
+    fi
+
+    # try to install using macports
+    if  command -v port &>/dev/null; then
+        echo "Using 'port' to install '$progName'"
+
+        sudo port install "$progName"
+        exit 1
+    fi
+
+    printf "\e[31mCould not find a package manager. $progName is not installed. Please install it manually!\e[0m\n"
+    exit 1
+}
+
 if ! command -v python3 &>/dev/null; then
-    echo 'Python 3 is not installed. Please install it!'
+    installProg 'python3'
+
+    printf "\e[31mRe-run this script to try again\e[0m\n"
     exit 1
 fi
 
-echo ''
-echo '                          GGGGGGGGGGGGG        CCCCCCCCCCCCC       CCCCCCCCCCCCC'
-echo '>>>>>>>                GGG::::::::::::G     CCC::::::::::::C    CCC::::::::::::C'
-echo ' >:::::>             GG:::::::::::::::G   CC:::::::::::::::C  CC:::::::::::::::C'
-echo '  >:::::>           G:::::GGGGGGGG::::G  C:::::CCCCCCCC::::C C:::::CCCCCCCC::::C'
-echo '   >:::::>         G:::::G       GGGGGG C:::::C       CCCCCCC:::::C       CCCCCC'
-echo '    >:::::>       G:::::G              C:::::C             C:::::C              '
-echo '     >:::::>      G:::::G              C:::::C             C:::::C              '
-echo '      >:::::>     G:::::G    GGGGGGGGGGC:::::C             C:::::C              '
-echo '     >:::::>      G:::::G    G::::::::GC:::::C             C:::::C              '
-echo '    >:::::>       G:::::G    GGGGG::::GC:::::C             C:::::C              '
-echo '   >:::::>        G:::::G        G::::GC:::::C             C:::::C              '
-echo '  >:::::>          G:::::G       G::::G C:::::C       CCCCCCC:::::C       CCCCCC'
-echo ' >:::::>            G:::::GGGGGGGG::::G  C:::::CCCCCCCC::::C C:::::CCCCCCCC::::C'
-echo '>>>>>>>              GG:::::::::::::::G   CC:::::::::::::::C  CC:::::::::::::::C'
-echo '                       GGG::::::GGG:::G     CCC::::::::::::C    CCC::::::::::::C'
-echo '                          GGGGGG   GGGG        CCCCCCCCCCCCC       CCCCCCCCCCCCC'
-echo ''
-echo ''
-echo 'Welcome to the GCC Fall 2019 Relay Programming Competition!'
-echo ''
-echo "I'm going to ask you some questions before we get started."
-echo ''
+# check if git is installed on the platform
+if ! command -v git &>/dev/null; then
+    installProg 'git'
+    printf "\e[31mRe-run this script to try again\e[0m\n"
+    exit 1
+fi
+
+isEmail=$(git config -l | grep "user\.email" | wc -l)
+isName=$(git config -l | grep "user\.name" | wc -l)
+
+
+if [ $isEmail -eq 0 ]; then
+    echo "Git does not know your email"
+    read -p "Please enter your email address: " email
+
+    printf "\e[96mrunning: 'git config --global user.email \"$email\"'\e[0m..."
+    git config --global user.email "$email"
+    echo "done."
+    echo ""
+fi
+
+
+if [ $isName -eq 0 ]; then
+    echo "Git does not know your name"
+    read -p "Please enter your name: " name
+
+    printf "\e[96mrunning: 'git config --global user.name \"$name\"'\e[0m..."
+    git config --global user.name "$name"
+    echo "done."
+    echo ""
+fi
+
+
+
+cat <<EOF
+
+                          GGGGGGGGGGGGG        CCCCCCCCCCCCC       CCCCCCCCCCCCC
+>>>>>>>                GGG::::::::::::G     CCC::::::::::::C    CCC::::::::::::C
+ >:::::>             GG:::::::::::::::G   CC:::::::::::::::C  CC:::::::::::::::C
+  >:::::>           G:::::GGGGGGGG::::G  C:::::CCCCCCCC::::C C:::::CCCCCCCC::::C
+   >:::::>         G:::::G       GGGGGG C:::::C       CCCCCCC:::::C       CCCCCC
+    >:::::>       G:::::G              C:::::C             C:::::C
+     >:::::>      G:::::G              C:::::C             C:::::C
+      >:::::>     G:::::G    GGGGGGGGGGC:::::C             C:::::C
+     >:::::>      G:::::G    G::::::::GC:::::C             C:::::C
+    >:::::>       G:::::G    GGGGG::::GC:::::C             C:::::C
+   >:::::>        G:::::G        G::::GC:::::C             C:::::C
+  >:::::>          G:::::G       G::::G C:::::C       CCCCCCC:::::C       CCCCCC
+ >:::::>            G:::::GGGGGGGG::::G  C:::::CCCCCCCC::::C C:::::CCCCCCCC::::C
+>>>>>>>              GG:::::::::::::::G   CC:::::::::::::::C  CC:::::::::::::::C
+                       GGG::::::GGG:::G     CCC::::::::::::C    CCC::::::::::::C
+                          GGGGGG   GGGG        CCCCCCCCCCCCC       CCCCCCCCCCCCC
+
+
+Welcome to the GCC Fall 2019 Relay Programming Competition!
+
+I'm going to ask you some questions before we get started.
+
+EOF
 
 valid=0
 while ((valid == 0 )); do
-    read -p 'Has each of your teammates forked https://github.com/GuelphCodingCommunity/f19-relay and added you as a collaborator? [y/n]: ' yn
+    printf "Has each of your teammates forked \e[35mhttps://github.com/GuelphCodingCommunity/f19-relay\e[0m and added you as a collaborator? [y/n]:"
+
+
+    read yn
     case $yn in
         y* | Y*)
             valid=1
@@ -77,6 +163,23 @@ debug "other_challenges=${other_challenges[@]}"
 for i in ${!other_challenges[@]}; do
     read -p "What is the GitHub username of your teammate doing challenge #${other_challenges[i]}? " team[i]
 done
+
+
+if [ "${team[0]}" == "${team[1]}" ]; then
+    printf "\e[31mTeam members can not have the same GitHub username\e[0m\n"
+    exit 1
+fi
+
+if [ "${team[1]}" == "$me" ]; then
+    printf "\e[31mTeam members can not have the same GitHub username\e[0m\n"
+    exit 1
+fi
+
+if [ "${team[0]}" == "$me" ]; then
+    printf "\e[31mTeam members can not have the same GitHub username\e[0m\n"
+    exit 1
+fi
+
 
 debug "challenge=$challenge"
 debug "team=${team[@]}"
@@ -136,8 +239,14 @@ debug git clone "$baseurl${team[0]}/f19-relay.git" "f19-relay/challenge_${other_
 
 git clone "$baseurl${team[1]}/f19-relay.git" "f19-relay/challenge_${other_challenges[1]}"
 debug git clone "$baseurl${team[1]}/f19-relay.git" "f19-relay/challenge_${other_challenges[1]}"
+
 echo 'Cloned.'
 echo ''
+
+echo 'removing non challenge files'
+rm "f19-relay/challenge_$challenge/setup.sh"
+rm "f19-relay/challenge_$challenge/challenge_0${other_challenges[0]}.pdf"
+rm "f19-relay/challenge_$challenge/challenge_0${other_challenges[1]}.pdf"
 
 echo "Bootstrapping your project for challenge $challenge..."
 dir=$PWD
@@ -179,7 +288,9 @@ else
     printf "\e[92mBootstrapped!\e[0m\n"
     printf "\e[1;93mPlease wait for further instruction!\e[0m\n"
     echo ""
-    echo "When it's time, open f19-relay/challenge_$challenge/$my_program and start coding!"
-    echo ""
+    printf "\e[34mRun 'cd f19-relay/challenge_$challenge' to go to the challenge folder\e[0m\n"
 
+    echo ""
+    echo "When it's time, open $my_program and start coding!"
+    echo ""
 fi
